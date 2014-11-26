@@ -1,20 +1,3 @@
-/* 
- * Copyright 2014 Paolo Stivanin a.k.a. Polslinux
- *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- *    http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
- * 
- */
-
 #include <gtk/gtk.h>
 #include <glib.h>
 #include <glib/gstdio.h>
@@ -26,14 +9,14 @@
 #include <libintl.h>
 #include <errno.h>
 
-#define VERSION "1.0.0"
+#define VERSION "1.0.1"
 #define LOCALE_DIR "/usr/share/locale"
-#define PACKAGE "baselaurea"          /* mo file name in LOCALE_DIR */
+#define PACKAGE "baselaurea" /* mo file name in LOCALE_DIR */
 
 #define WN 10
 
 /* TODO:
- * - eliminare lo spazio iniziale, fa schifooooo
+ * - aggiungere 20 esami ((10xframe)x2)
  * - tener traccia del precedente (hash table o linked list) e fornire nel show_mesasge anche il preb
  */
 
@@ -49,7 +32,7 @@ GtkWidget *do_mainwin (GtkApplication *, struct _data *);
 static void calc (GtkWidget *btn, struct _data *);
 static void show_message (GtkWidget *, gfloat, gfloat, gfloat);
 static void error_dialog (const gchar *, GtkWidget *);
-static void startup (GtkApplication *, gpointer );
+static void startup (GtkApplication *,  gpointer);
 static void activate (GtkApplication *, struct _data *);
 static void about (GSimpleAction *, GVariant *, gpointer);
 static void quit (GSimpleAction *, GVariant *, gpointer);
@@ -79,21 +62,21 @@ main (	int argc,
 
 static void
 startup (	GtkApplication *application,
-			gpointer __attribute__((__unused__)) data)
+			gpointer user_data __attribute__((__unused__)))
 {
-	static const GActionEntry actions[] = {
-		{ "about", about },
-		{ "quit", quit }
+	static GActionEntry actions[] = {
+		{ "about", about, NULL, NULL, NULL },
+		{ "quit", quit, NULL, NULL, NULL }
 	};
-	
+
 	const gchar *quit_accels[2] = { "<Ctrl>Q", NULL };
 	
 	GMenu *menu, *section;
-
+		
 	g_action_map_add_action_entries (G_ACTION_MAP (application),
 					 actions, G_N_ELEMENTS (actions),
 					 application);
-	
+	                                
 	gtk_application_set_accels_for_action (GTK_APPLICATION (application),
 					       "app.quit",
 					       quit_accels);
@@ -145,35 +128,37 @@ activate (	GtkApplication *app,
 
 		data->voto_list[i] = gtk_entry_new ();
 		gtk_entry_set_max_length (GTK_ENTRY (data->voto_list[i]), 2);
+		
+		g_signal_connect (data->voto_list[i], "activate", G_CALLBACK (calc), data);
 	}
 		
 	for (i=0; i<WN-1; i++)
 	{
 		g_signal_connect (data->voto_list[i], "grab-focus", G_CALLBACK (show_next), data->voto_list[i+1]);
 		g_signal_connect (data->voto_list[i], "grab-focus", G_CALLBACK (show_next), data->cfu_list[i+1]);
-		g_signal_connect (data->voto_list[i], "activate", G_CALLBACK (calc), data);
 	}
 	
 	grid = gtk_grid_new();
 	gtk_container_add (GTK_CONTAINER (data->main_window), grid);
 	gtk_grid_set_column_homogeneous (GTK_GRID (grid), TRUE);
-	gtk_grid_set_row_spacing (GTK_GRID (grid), 10);
-	gtk_grid_set_column_spacing (GTK_GRID (grid), 5);
 	
 	for (i=0; i<WN+1; i++)
-		bx[i] = gtk_box_new (GTK_ORIENTATION_HORIZONTAL, 2);
+	{
+		bx[i] = gtk_box_new (GTK_ORIENTATION_HORIZONTAL, 5);
 		
-	gtk_box_pack_start (GTK_BOX(bx[0]), lb[0], TRUE, TRUE, 2);
-	gtk_box_pack_start (GTK_BOX(bx[0]), lb[1], TRUE, TRUE, 2);
+	}
+	
+	gtk_box_pack_start (GTK_BOX(bx[0]), lb[0], TRUE, TRUE, 0);
+	gtk_box_pack_start (GTK_BOX(bx[0]), lb[1], TRUE, TRUE, 0);
 	
 	for(i=1; i<WN+1; i++)
 	{
-		gtk_box_pack_start (GTK_BOX(bx[i]), data->cfu_list[i-1], TRUE, TRUE, 2);
-		gtk_box_pack_start (GTK_BOX(bx[i]), data->voto_list[i-1], TRUE, TRUE, 2);
+		gtk_box_pack_start (GTK_BOX(bx[i]), data->cfu_list[i-1], TRUE, TRUE, 0);
+		gtk_box_pack_start (GTK_BOX(bx[i]), data->voto_list[i-1], TRUE, TRUE, 0);
 	}
 
 	for (i=0, j=0; i<WN+1; i++, j+=2)
-		gtk_grid_attach (GTK_GRID (grid), bx[i], 0, j, 2, 2);	
+		gtk_grid_attach (GTK_GRID (grid), bx[i], 0, j, 1, 1);	
 
 	gtk_widget_show_all (data->main_window);
 	
@@ -186,14 +171,24 @@ activate (	GtkApplication *app,
 
 
 static void
-show_next (GtkWidget __attribute__((__unused__)) *caller, GtkWidget *showme)
+show_next (	GtkWidget *caller __attribute__((__unused__)),
+			GtkWidget *showme)
 {
+	GValue top_margin = G_VALUE_INIT;
+	
+	if (!G_IS_VALUE (&top_margin))
+		g_value_init (&top_margin, G_TYPE_UINT);
+			
+	g_value_set_uint (&top_margin, 10);
+	g_object_set_property (G_OBJECT (showme), "margin-top", &top_margin);
+	
 	gtk_widget_show (showme);
 }
 
 
 GtkWidget
-*do_mainwin (GtkApplication *app, struct _data *data)
+*do_mainwin (	GtkApplication *app,
+				struct _data *data)
 {
 	static GtkWidget *window = NULL;
 	GtkWidget *header_bar;
@@ -205,7 +200,7 @@ GtkWidget
 	gtk_window_set_position (GTK_WINDOW (window), GTK_WIN_POS_CENTER);
 	gtk_window_set_resizable (GTK_WINDOW (window), FALSE);
 	
-	gtk_container_set_border_width (GTK_CONTAINER (window), 10);
+	gtk_container_set_border_width (GTK_CONTAINER (window), 5);
 	
 	btn = gtk_button_new_with_label ("Calcolare");
 	
@@ -231,7 +226,7 @@ GtkWidget
 
 
 static void
-calc (	GtkWidget __attribute__((__unused__)) *btn,
+calc (	GtkWidget *btn __attribute__((__unused__)),
 		struct _data *data)
 {	
 	gint i, stop = 0, tmp_arit = 0, tmp_pond = 0, cfu_summation = 0;
@@ -317,43 +312,39 @@ error_dialog (	const gchar *message,
 
 
 static void
-about (	GSimpleAction __attribute__((__unused__)) *action, 
-		GVariant __attribute__((__unused__)) *parameter,
-		gpointer __attribute__((__unused__)) data)
+about (	GSimpleAction *action __attribute__((__unused__)), 
+		GVariant *parameter __attribute__((__unused__)),
+		gpointer user_data)
 {
-        const gchar *authors[] =
-        {
-                "Paolo Stivanin <info@paolostivanin.com>",
-                NULL,
-        };
+	GtkApplication *app = user_data;
+	GtkWindow *win = gtk_application_get_active_window (app);
 	
-        GtkWidget *a_dialog = gtk_about_dialog_new ();
-        gtk_about_dialog_set_program_name (GTK_ABOUT_DIALOG (a_dialog), "Base di Laurea");
-       
-        gtk_about_dialog_set_version (GTK_ABOUT_DIALOG (a_dialog), VERSION);
-        gtk_about_dialog_set_copyright (GTK_ABOUT_DIALOG (a_dialog), "Copyright (C) 2014");
-        gtk_about_dialog_set_comments (GTK_ABOUT_DIALOG (a_dialog), _("Calcolare la base di laurea e la media aritmetica e ponderata"));
-        gtk_about_dialog_set_license(GTK_ABOUT_DIALOG(a_dialog),
-					"This program is free software: you can redistribute it and/or modify it under the terms"
-					" of the GNU General Public License as published by the Free Software Foundation, either version 3 of"
-					" the License, or (at your option) any later version.\n"
-					"This program is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; without even"
-					" the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. "
-					"See the GNU General Public License for more details.\n"
-					"You should have received a copy of the GNU General Public License along with this program."
-					"\nIf not, see http://www.gnu.org/licenses\n\nPolCrypt is Copyright (C) 2014 by Paolo Stivanin.\n");
-        gtk_about_dialog_set_wrap_license (GTK_ABOUT_DIALOG (a_dialog), TRUE);
-        gtk_about_dialog_set_website (GTK_ABOUT_DIALOG (a_dialog), "http://paolostivanin.com");
-        gtk_about_dialog_set_authors (GTK_ABOUT_DIALOG (a_dialog), authors);
+	const gchar *authors[] =
+	{
+			"Paolo Stivanin <info@paolostivanin.com>",
+			NULL,
+	};
 
-        gtk_dialog_run(GTK_DIALOG (a_dialog));
-        gtk_widget_destroy (a_dialog);
+	GtkWidget *a_dialog = gtk_about_dialog_new ();
+	gtk_window_set_transient_for (GTK_WINDOW (a_dialog), GTK_WINDOW (win));
+	
+	gtk_about_dialog_set_program_name (GTK_ABOUT_DIALOG (a_dialog), "Base di Laurea");
+   
+	gtk_about_dialog_set_version (GTK_ABOUT_DIALOG (a_dialog), VERSION);
+	gtk_about_dialog_set_copyright (GTK_ABOUT_DIALOG (a_dialog), "Copyright (C) 2014");
+	gtk_about_dialog_set_comments (GTK_ABOUT_DIALOG (a_dialog), _("Calcolare la base di laurea e la media aritmetica e ponderata"));
+	gtk_about_dialog_set_license_type (GTK_ABOUT_DIALOG (a_dialog), GTK_LICENSE_GPL_3_0);
+	gtk_about_dialog_set_website (GTK_ABOUT_DIALOG (a_dialog), "http://paolostivanin.com");
+	gtk_about_dialog_set_authors (GTK_ABOUT_DIALOG (a_dialog), authors);
+
+	gtk_dialog_run(GTK_DIALOG (a_dialog));
+	gtk_widget_destroy (a_dialog);
 }
 
 
 static void
-quit (	GSimpleAction __attribute__((__unused__)) *action,
-		GVariant __attribute__((__unused__)) *parameter,
+quit (	GSimpleAction *action __attribute__((__unused__)),
+		GVariant *parameter __attribute__((__unused__)),
 		gpointer app)
 {
 	g_application_quit (G_APPLICATION (app));
