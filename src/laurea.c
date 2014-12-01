@@ -17,7 +17,7 @@
 
 /* TODO:
  * - aggiungere 20 esami ((10xframe)x2)
- * - tener traccia del precedente (hash table o linked list) e fornire nel show_mesasge anche il preb
+ * - calcolo iniziale senza media precedente (tutto a 0 non mi serve visualizzarla)
  */
 
 struct _data
@@ -25,12 +25,18 @@ struct _data
 	GtkWidget *main_window;
 	GtkWidget *cfu_list[WN];
 	GtkWidget *voto_list[WN];
+	struct _prev
+	{
+		gfloat p_ma;
+		gfloat p_mp;
+		gfloat p_bl;
+	}prev;
 };
 
 
 GtkWidget *do_mainwin (GtkApplication *, struct _data *);
 static void calc (GtkWidget *btn, struct _data *);
-static void show_message (GtkWidget *, gfloat, gfloat, gfloat);
+static void show_message (GtkWidget *, gfloat, gfloat, gfloat, gfloat, gfloat, gfloat);
 static void error_dialog (const gchar *, GtkWidget *);
 static void startup (GtkApplication *,  gpointer);
 static void activate (GtkApplication *, struct _data *);
@@ -50,6 +56,10 @@ main (	int argc,
 	GtkApplication *app;
 	gint status;
 	struct _data data;
+	
+	data.prev.p_ma = 0.0;
+	data.prev.p_mp = 0.0;
+	data.prev.p_bl = 0.0;
 	
 	app = gtk_application_new ("org.gtk.baselaurea", G_APPLICATION_FLAGS_NONE);
 	g_signal_connect (app, "startup", G_CALLBACK (startup), NULL);
@@ -266,31 +276,46 @@ calc (	GtkWidget *btn __attribute__((__unused__)),
 	m_arit = (gfloat)tmp_arit / stop;
 	m_pond = (gfloat)tmp_pond/cfu_summation;
 	base_laurea = (m_pond * 110)/30;
-	show_message (data->main_window, m_arit, m_pond, base_laurea);
+	
+	show_message (data->main_window, data->prev.p_ma, data->prev.p_mp, data->prev.p_bl, m_arit, m_pond, base_laurea);
+	
+	data->prev.p_ma = m_arit;
+	data->prev.p_mp = m_pond;
+	data->prev.p_bl = base_laurea;
 }
 
 
 static void
 show_message (	GtkWidget *mainwin,
+				gfloat p_ma,
+				gfloat p_mp,
+				gfloat p_bl,
 				gfloat ma,
 				gfloat mp,
 				gfloat bl)
 {
+	gchar old_message[200];
 	gchar message[120];
+	gchar *final_message;
+	
+	g_snprintf (old_message, 200, "(old) Media Aritmetica:\t<b>%.2f</b>\n(old) Media Ponderata:\t<b>%.2f</b>\n(old) Base di Laurea:\t<b>%.2f</b>\n\n", p_ma, p_mp, p_bl);
 	g_snprintf (message, 120, "Media Aritmetica:\t<b>%.2f</b>\nMedia Ponderata:\t<b>%.2f</b>\nBase di Laurea:\t<b>%.2f</b>", ma, mp, bl);
+	final_message = g_strconcat (old_message, message, NULL);
 	
 	GtkWidget *dialog;
 	dialog = gtk_message_dialog_new (GTK_WINDOW (mainwin),
 					GTK_DIALOG_MODAL,
 					GTK_MESSAGE_INFO,
 					GTK_BUTTONS_OK,
-					"%s", message);
+					"%s\n%s", old_message, message);
 	
-	gtk_message_dialog_set_markup (GTK_MESSAGE_DIALOG (dialog), message);
+	gtk_message_dialog_set_markup (GTK_MESSAGE_DIALOG (dialog), final_message);
 					
 	gtk_dialog_run (GTK_DIALOG (dialog));
 	
 	gtk_widget_destroy (dialog);
+	
+	g_free (final_message);
 }
 
 
@@ -345,7 +370,8 @@ about (	GSimpleAction *action __attribute__((__unused__)),
 static void
 quit (	GSimpleAction *action __attribute__((__unused__)),
 		GVariant *parameter __attribute__((__unused__)),
-		gpointer app)
+		gpointer user_data)
 {
+	GtkApplication *app = user_data;
 	g_application_quit (G_APPLICATION (app));
 }
