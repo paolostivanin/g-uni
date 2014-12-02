@@ -9,7 +9,7 @@
 #include <libintl.h>
 #include <errno.h>
 
-#define VERSION "1.0.1"
+#define VERSION "1.0.2"
 #define LOCALE_DIR "/usr/share/locale"
 #define PACKAGE "baselaurea" /* mo file name in LOCALE_DIR */
 
@@ -27,6 +27,7 @@ struct _data
 	GtkWidget *voto_list[WN];
 	struct _prev
 	{
+		gboolean first_calc;
 		gfloat p_ma;
 		gfloat p_mp;
 		gfloat p_bl;
@@ -36,7 +37,7 @@ struct _data
 
 GtkWidget *do_mainwin (GtkApplication *, struct _data *);
 static void calc (GtkWidget *btn, struct _data *);
-static void show_message (GtkWidget *, gfloat, gfloat, gfloat, gfloat, gfloat, gfloat);
+static void show_message (GtkWidget *, struct _data *, gfloat, gfloat, gfloat);
 static void error_dialog (const gchar *, GtkWidget *);
 static void startup (GtkApplication *,  gpointer);
 static void activate (GtkApplication *, struct _data *);
@@ -57,6 +58,7 @@ main (	int argc,
 	gint status;
 	struct _data data;
 	
+	data.prev.first_calc = TRUE;
 	data.prev.p_ma = 0.0;
 	data.prev.p_mp = 0.0;
 	data.prev.p_bl = 0.0;
@@ -277,8 +279,11 @@ calc (	GtkWidget *btn __attribute__((__unused__)),
 	m_pond = (gfloat)tmp_pond/cfu_summation;
 	base_laurea = (m_pond * 110)/30;
 	
-	show_message (data->main_window, data->prev.p_ma, data->prev.p_mp, data->prev.p_bl, m_arit, m_pond, base_laurea);
+	show_message (data->main_window, data, m_arit, m_pond, base_laurea);
 	
+	if (data->prev.first_calc)
+		data->prev.first_calc = FALSE;
+		
 	data->prev.p_ma = m_arit;
 	data->prev.p_mp = m_pond;
 	data->prev.p_bl = base_laurea;
@@ -287,9 +292,7 @@ calc (	GtkWidget *btn __attribute__((__unused__)),
 
 static void
 show_message (	GtkWidget *mainwin,
-				gfloat p_ma,
-				gfloat p_mp,
-				gfloat p_bl,
+				struct _data *data,
 				gfloat ma,
 				gfloat mp,
 				gfloat bl)
@@ -298,9 +301,15 @@ show_message (	GtkWidget *mainwin,
 	gchar message[120];
 	gchar *final_message;
 	
-	g_snprintf (old_message, 200, "(old) Media Aritmetica:\t<b>%.2f</b>\n(old) Media Ponderata:\t<b>%.2f</b>\n(old) Base di Laurea:\t<b>%.2f</b>\n\n", p_ma, p_mp, p_bl);
+	if (!data->prev.first_calc)
+		g_snprintf (old_message, 200, "(old) Media Aritmetica:\t<b>%.2f</b>\n(old) Media Ponderata:\t<b>%.2f</b>\n(old) Base di Laurea:\t<b>%.2f</b>\n\n", data->prev.p_ma, data->prev.p_mp, data->prev.p_bl);
+	
 	g_snprintf (message, 120, "Media Aritmetica:\t<b>%.2f</b>\nMedia Ponderata:\t<b>%.2f</b>\nBase di Laurea:\t<b>%.2f</b>", ma, mp, bl);
-	final_message = g_strconcat (old_message, message, NULL);
+	
+	if (!data->prev.first_calc)
+		final_message = g_strconcat (old_message, message, NULL);
+	else
+		final_message = g_strconcat (message, NULL);
 	
 	GtkWidget *dialog;
 	dialog = gtk_message_dialog_new (GTK_WINDOW (mainwin),
