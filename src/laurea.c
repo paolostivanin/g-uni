@@ -8,35 +8,15 @@
 #include <ctype.h>
 #include <libintl.h>
 #include <errno.h>
+#include "guni.h"
 
-#define VERSION "1.0.2"
-#define LOCALE_DIR "/usr/share/locale"
-#define PACKAGE "baselaurea" /* mo file name in LOCALE_DIR */
-
-#define WN 10
 
 /* TODO:
  * - aggiungere 20 esami ((10xframe)x2)
- * - calcolo iniziale senza media precedente (tutto a 0 non mi serve visualizzarla)
  */
-
-struct _data
-{
-	GtkWidget *main_window;
-	GtkWidget *cfu_list[WN];
-	GtkWidget *voto_list[WN];
-	struct _prev
-	{
-		gboolean first_calc;
-		gfloat p_ma;
-		gfloat p_mp;
-		gfloat p_bl;
-	}prev;
-};
 
 
 GtkWidget *do_mainwin (GtkApplication *, struct _data *);
-static void calc (GtkWidget *btn, struct _data *);
 static void show_message (GtkWidget *, struct _data *, gfloat, gfloat, gfloat);
 static void error_dialog (const gchar *, GtkWidget *);
 static void startup (GtkApplication *,  gpointer);
@@ -198,46 +178,7 @@ show_next (	GtkWidget *caller __attribute__((__unused__)),
 }
 
 
-GtkWidget
-*do_mainwin (	GtkApplication *app,
-				struct _data *data)
-{
-	static GtkWidget *window = NULL;
-	GtkWidget *header_bar;
-	GtkWidget *box;
-	GtkWidget *btn;
-	
-	window = gtk_application_window_new(app);
-	gtk_window_set_application (GTK_WINDOW (window), GTK_APPLICATION (app));
-	gtk_window_set_position (GTK_WINDOW (window), GTK_WIN_POS_CENTER);
-	gtk_window_set_resizable (GTK_WINDOW (window), FALSE);
-	
-	gtk_container_set_border_width (GTK_CONTAINER (window), 5);
-	
-	btn = gtk_button_new_with_label ("Calcolare");
-	
-	gchar headertext[12 + strlen (VERSION) + 1];
-	g_snprintf (headertext, sizeof (headertext), _("Base Laurea %s"), VERSION);
-	headertext[sizeof (headertext)-1] = '\0';
-
-	header_bar = gtk_header_bar_new ();
-	gtk_header_bar_set_show_close_button (GTK_HEADER_BAR (header_bar), TRUE);
-	gtk_header_bar_set_title (GTK_HEADER_BAR (header_bar), headertext);
-	gtk_header_bar_set_has_subtitle (GTK_HEADER_BAR (header_bar), FALSE);
-	
-	box = gtk_box_new (GTK_ORIENTATION_HORIZONTAL, 0);
-	gtk_style_context_add_class (gtk_widget_get_style_context (box), "linked");
-	gtk_header_bar_pack_end (GTK_HEADER_BAR (header_bar), btn);
-		
-	gtk_window_set_titlebar (GTK_WINDOW (window), header_bar);
-	
-	g_signal_connect (btn, "clicked", G_CALLBACK (calc), data);
-	
-	return window;
-}
-
-
-static void
+void
 calc (	GtkWidget *btn __attribute__((__unused__)),
 		struct _data *data)
 {	
@@ -362,7 +303,7 @@ about (	GSimpleAction *action __attribute__((__unused__)),
 	GtkWidget *a_dialog = gtk_about_dialog_new ();
 	gtk_window_set_transient_for (GTK_WINDOW (a_dialog), GTK_WINDOW (win));
 	
-	gtk_about_dialog_set_program_name (GTK_ABOUT_DIALOG (a_dialog), "Base di Laurea");
+	gtk_about_dialog_set_program_name (GTK_ABOUT_DIALOG (a_dialog), "G-Uni");
    
 	gtk_about_dialog_set_version (GTK_ABOUT_DIALOG (a_dialog), VERSION);
 	gtk_about_dialog_set_copyright (GTK_ABOUT_DIALOG (a_dialog), "Copyright (C) 2014");
