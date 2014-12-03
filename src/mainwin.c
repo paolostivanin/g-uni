@@ -1,7 +1,6 @@
 #include <gtk/gtk.h>
 #include <glib.h>
 #include <glib/gstdio.h>
-#include <gdk-pixbuf/gdk-pixbuf.h>
 #include <string.h>
 #include "guni.h"
 

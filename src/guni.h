@@ -1,7 +1,7 @@
 #ifndef GUNI_H_INCLUDED
 #define GUNI_H_INCLUDED
 
-#define VERSION "1.0.2.1"
+#define VERSION "1.0.2.2"
 #define LOCALE_DIR "/usr/share/locale"
 #define PACKAGE "baselaurea" /* mo file name in LOCALE_DIR */
 
@@ -24,5 +24,6 @@ extern struct _data data;
 
 
 void calc (GtkWidget *btn, struct _data *);
+void error_dialog (const gchar *, GtkWidget *);
 
 #endif
