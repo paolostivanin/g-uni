@@ -1,7 +1,7 @@
 #ifndef GUNI_H_INCLUDED
 #define GUNI_H_INCLUDED
 
-#define VERSION "1.0.2.2"
+#define VERSION "1.0.3"
 #define LOCALE_DIR "/usr/share/locale"
 #define PACKAGE "baselaurea" /* mo file name in LOCALE_DIR */
 

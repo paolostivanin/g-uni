@@ -27,20 +27,29 @@ calc (	GtkWidget *btn __attribute__((__unused__)),
 		
 		if (cfu[i] < 1 || cfu[i] > 15)
 		{
+			gtk_entry_set_icon_from_icon_name (GTK_ENTRY (data->cfu_list[i]), GTK_ENTRY_ICON_SECONDARY, "dialog-warning-symbolic");
 			error_dialog ("Il numero di CFU deve essere compreso fra 1 e 15", data->main_window);
 			return;
 		}
 
 		if (voto[i] < 18 || voto[i] > 30)
 		{
+			gtk_entry_set_icon_from_icon_name (GTK_ENTRY (data->voto_list[i]), GTK_ENTRY_ICON_SECONDARY, "dialog-warning-symbolic");
+			
 			error_dialog ("Il voto deve essere compreso fra 18 e 30", data->main_window);
+			
 			return;
 		}		
-			
 	}
 	
 	for (i=0; i<stop; i++)
 	{
+		if (gtk_entry_get_icon_pixbuf (GTK_ENTRY (data->cfu_list[i]), GTK_ENTRY_ICON_SECONDARY) != NULL)
+			gtk_entry_set_icon_from_icon_name (GTK_ENTRY (data->cfu_list[i]), GTK_ENTRY_ICON_SECONDARY, NULL);
+		
+		if (gtk_entry_get_icon_pixbuf (GTK_ENTRY (data->voto_list[i]), GTK_ENTRY_ICON_SECONDARY) != NULL)
+			gtk_entry_set_icon_from_icon_name (GTK_ENTRY (data->voto_list[i]), GTK_ENTRY_ICON_SECONDARY, NULL);
+			
 		tmp_arit += voto[i];
 		tmp_pond = tmp_pond + (cfu[i]*voto[i]);
 		cfu_summation += cfu[i];
